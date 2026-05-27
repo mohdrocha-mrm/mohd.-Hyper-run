@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mohd Hyper Run</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:Arial, sans-serif;
+    }
+
+    body{
+        overflow:hidden;
+        background:#050816;
+    }
+
+    #game{
+        position:relative;
+        width:100vw;
+        height:100vh;
+        overflow:hidden;
+        background:linear-gradient(to bottom,#0f172a,#111827);
+    }
+
+    /* Stars */
+    .star{
+        position:absolute;
+        width:3px;
+        height:3px;
+        background:white;
+        border-radius:50%;
+        animation:moveStar linear infinite;
+    }
+
+    @keyframes moveStar{
+        from{
+            transform:translateX(100vw);
+        }
+        to{
+            transform:translateX(-10vw);
+        }
+    }
+
+    /* Ground */
+    #ground{
+        position:absolute;
+        bottom:0;
+        width:100%;
+        height:120px;
+        background:#111;
+        border-top:4px solid cyan;
+    }
+
+    /* Player */
+    #player{
+        position:absolute;
+        width:70px;
+        height:70px;
+        left:80px;
+        bottom:120px;
+        border-radius:15px;
+        background:linear-gradient(45deg,cyan,#00f7ff,#0066ff);
+        box-shadow:0 0 20px cyan;
+    }
+
+    /* Obstacles */
+    .obstacle{
+        position:absolute;
+        width:50px;
+        height:80px;
+        background:red;
+        bottom:120px;
+        border-radius:10px;
+        box-shadow:0 0 15px red;
+    }
+
+    /* Score */
+    #score{
+        position:absolute;
+        top:20px;
+        left:20px;
+        color:white;
+        font-size:28px;
+        font-weight:bold;
+        z-index:10;
+    }
+
+    /* Game Title */
+    #title{
+        position:absolute;
+        top:20px;
+        width:100%;
+        text-align:center;
+        color:cyan;
+        font-size:40px;
+        font-weight:bold;
+        text-shadow:0 0 20px cyan;
+    }
+
+    /* Game Over */
+    #gameOver{
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        color:white;
+        font-size:40px;
+        text-align:center;
+        display:none;
+        z-index:100;
+    }
+
+    #restartBtn{
+        margin-top:20px;
+        padding:12px 25px;
+        border:none;
+        background:cyan;
+        color:black;
+        font-size:20px;
+        border-radius:10px;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <div id="title">MOHD HYPER RUN</div>
+
+    <div id="score">Score: 0</div>
+
+    <div id="player"></div>
+
+    <div id="ground"></div>
+
+    <div id="gameOver">
+        GAME OVER
+        <br>
+        <button id="restartBtn">Restart</button>
+    </div>
+
+</div>
+
+<script>
+
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const scoreText = document.getElementById("score");
+const gameOver = document.getElementById("gameOver");
+const restartBtn = document.getElementById("restartBtn");
+
+let jumping = false;
+let velocity = 0;
+let gravity = 0.8;
+let playerBottom = 120;
+
+let score = 0;
+let gameRunning = true;
+
+function jump(){
+    if(!jumping){
+        jumping = true;
+        velocity = 16;
+    }
+}
+
+document.addEventListener("keydown",(e)=>{
+    if(e.code === "Space" || e.code === "ArrowUp"){
+        jump();
+    }
+});
+
+document.addEventListener("touchstart",()=>{
+    jump();
+});
+
+function updatePlayer(){
+
+    velocity -= gravity;
+    playerBottom += velocity;
+
+    if(playerBottom <= 120){
+        playerBottom = 120;
+        jumping = false;
+    }
+
+    player.style.bottom = playerBottom + "px";
+}
+
+function createObstacle(){
+
+    if(!gameRunning) return;
+
+    const obstacle = document.createElement("div");
+    obstacle.classList.add("obstacle");
+
+    let obstacleLeft = window.innerWidth;
+
+    obstacle.style.left = obstacleLeft + "px";
+
+    game.appendChild(obstacle);
+
+    let speed = 8 + (score / 200);
+
+    const moveObstacle = setInterval(()=>{
+
+        if(!gameRunning){
+            clearInterval(moveObstacle);
+            return;
+        }
+
+        obstacleLeft -= speed;
+        obstacle.style.left = obstacleLeft + "px";
+
+        // Collision
+        if(
+            obstacleLeft < 140 &&
+            obstacleLeft > 60 &&
+            playerBottom < 190
+        ){
+            endGame();
+        }
+
+        if(obstacleLeft < -60){
+            obstacle.remove();
+            clearInterval(moveObstacle);
+
+            score++;
+            scoreText.innerText = "Score: " + score;
+        }
+
+    },20);
+
+    const nextTime = Math.random() * 1500 + 1000;
+    setTimeout(createObstacle,nextTime);
+}
+
+function endGame(){
+
+    gameRunning = false;
+    gameOver.style.display = "block";
+}
+
+restartBtn.addEventListener("click",()=>{
+    location.reload();
+});
+
+function gameLoop(){
+
+    if(gameRunning){
+        updatePlayer();
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+gameLoop();
+createObstacle();
+
+
+// Create Stars
+for(let i=0;i<100;i++){
+
+    const star = document.createElement("div");
+    star.classList.add("star");
+
+    star.style.top = Math.random()*window.innerHeight + "px";
+    star.style.left = Math.random()*window.innerWidth + "px";
+
+    let size = Math.random()*3 + 1;
+
+    star.style.width = size + "px";
+    star.style.height = size + "px";
+
+    star.style.animationDuration = (Math.random()*5 + 3) + "s";
+
+    game.appendChild(star);
+}
+
+</script>
+
+</body>
+  </html>
